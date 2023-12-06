@@ -1,0 +1,57 @@
+# .terraform-docs.yml
+formatter: "markdown table"
+
+sections:
+  show:
+    - header
+    - requirements
+    - providers
+    - resources
+    - inputs
+    - outputs
+    - footer
+
+content: |-
+  {{ .Header }}
+
+  ## 1. Setup Cert Manager
+
+  ```hcl
+  {{ include "cert-manager.tf" }}
+  ```
+
+  ## 2. Setup Agents Runner Controller 
+
+  ```hcl
+  {{ include "actions-runner-controller.tf" }}
+  ```
+
+  ## 3. Setup Runner
+
+  ```hcl
+  {{ include "main.tf" }}
+  ```
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+  {{ .Footer }}
+
+sort:
+  enabled: true
+  by: required
+
+settings:
+  anchor: true
+  default: true
+  required: true
+  type: true
+  hide-empty: true
+  indent: 2

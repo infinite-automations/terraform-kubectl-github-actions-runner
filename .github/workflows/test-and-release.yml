@@ -1,0 +1,165 @@
+name: Test & Release
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  actions: read
+  contents: write
+  statuses: read
+
+env:
+  TF_VAR_github_app_id: ${{ secrets.GH_APP_ID }}
+  TF_VAR_github_app_install_id: ${{ secrets.GH_APP_INSTALL_ID }}
+  TF_VAR_github_app_private_key: ${{ secrets.GH_APP_KEY }}
+  TF_VAR_labels: '["test", "${{ github.run_id }}"]'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        directory:
+          - "."
+          - "examples/full"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Lint Example
+        uses: "infinite-automations/tflint-all-in-one@v1.0.0"
+        with:
+          directory: ${{ matrix.directory }}
+
+  update-docs:
+    name: Update Docs
+    needs:
+      - lint
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}-docs
+      cancel-in-progress: false
+    outputs:
+      changed: ${{ steps.terraform-docs.outputs.num_changed > 0 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: ${{ github.event_name == 'push' }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Render terraform docs inside the README.md
+        id: terraform-docs
+        uses: terraform-docs/gh-actions@v1.0.0
+        with:
+          working-dir: .,examples/full
+          output-file: README.md
+          output-method: inject
+          git-push: ${{ github.event_name == 'pull_request' }}
+          git-commit-message: "docs(terraform): update README.md"
+      - name: Cache Docs
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            README.md
+            examples/full/README.md
+          key: ${{ runner.os }}-docs-${{ github.sha }}
+
+  setup-runner:
+    name: Setup Runner
+    needs:
+      - lint
+      - update-docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          wait: "120s"
+      - name: Create Runners
+        uses: infinite-automations/terraform-all-in-one@v1.2.0
+        id: apply-example
+        with:
+          directory: "examples/full"
+          plan: false
+          apply: true
+          destroy: false
+      - name: Wait For Test
+        uses: yogeshlonkar/wait-for-jobs@v0
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          jobs: "Test"
+          prefix: true
+          ttl: "10"
+      - name: Destroy Runners
+        uses: infinite-automations/terraform-all-in-one@v1.2.0
+        if: always()
+        with:
+          directory: "examples/full"
+          plan: false
+          apply: false
+          destroy: true
+          destroy-args: '-target="kubectl_manifest.runner"'
+
+  test-runner:
+    name: Test
+    needs:
+      - lint
+      - update-docs
+    runs-on:
+      - self-hosted
+      - test
+      - ${{ github.run_id }}
+    strategy:
+      matrix:
+        image:
+          - alpine:latest
+          - ubuntu:latest
+          - debian:latest
+    container:
+      image: ${{ matrix.image }}
+    timeout-minutes: 10
+    steps:
+      - name: Print Environment Information
+        run: |
+          echo "Operating System: $OSTYPE"
+          echo "Hostname: $(hostname)"
+          echo "CPU Architecture: $(uname -m)"
+          echo "Kernel Version: $(uname -r)"
+          echo
+          cat /etc/os-release
+
+  release:
+    name: Release
+    needs:
+      - update-docs
+      - setup-runner
+      - test-runner
+    concurrency:
+      group: ${{ github.ref }}-release
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Restore Cached Docs
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache@v3
+        with:
+          path: README.md
+          key: ${{ runner.os }}-docs-${{ github.sha }}
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          dry_run: ${{ github.event_name == 'pull_request' }}
+          ci: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,45 @@
+# .terraform-docs.yml
+formatter: "markdown table"
+
+sections:
+  show:
+    - header
+    - requirements
+    - providers
+    - resources
+    - inputs
+    - outputs
+    - footer
+
+content: |-
+  {{ .Header }}
+
+  ## Module Usage
+
+  ```hcl
+  {{ include "examples/full/main.tf" }}
+  ```
+
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+  {{ .Footer }}
+
+sort:
+  enabled: true
+  by: required
+
+settings:
+  anchor: true
+  default: true
+  required: true
+  type: true
+  hide-empty: true
+  indent: 2
