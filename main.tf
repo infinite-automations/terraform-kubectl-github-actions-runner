@@ -30,6 +30,7 @@ resource "kubectl_manifest" "runner" {
           repository         = "${var.repo_owner}/${var.repo_name}"
           labels             = var.labels
           containerMode      = "kubernetes"
+          ephemeral          = var.ephemeral
           serviceAccountName = kubernetes_service_account.runner.metadata[0].name
           workVolumeClaimTemplate = {
             storageClassName = var.storage_class_name
@@ -87,7 +88,6 @@ resource "kubectl_manifest" "runner_autoscaler" {
       minReplicas = var.min_count
       maxReplicas = var.max_count
       metrics     = var.metrics
-      ephemeral   = var.ephemeral
     }
   })
 }
