@@ -30,7 +30,7 @@ resource "helm_release" "cert_manager" {
 }
 ```
 
-## 2. Setup Agents Runner Controller
+## 2. Setup Agents Runner Controller 
 
 ```hcl
 # setup actions-runner-controller
@@ -131,7 +131,6 @@ module "actions_runner" {
 | <a name="input_github_app_install_id"></a> [github\_app\_install\_id](#input\_github\_app\_install\_id) | GitHub App Install ID | `string` | n/a | yes |
 | <a name="input_github_app_private_key"></a> [github\_app\_private\_key](#input\_github\_app\_private\_key) | GitHub App Private Key | `string` | n/a | yes |
 | <a name="input_labels"></a> [labels](#input\_labels) | The labels for the runner | `list(string)` | n/a | yes |
-
 
 
 
