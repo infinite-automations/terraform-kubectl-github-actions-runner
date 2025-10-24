@@ -1,5 +1,8 @@
 # terraform-kubectl-github-actions-runner
 
+> [!CAUTION]
+> Archived in favor of GitHub [super-linter](https://github.com/super-linter/super-linter)
+
 Setup the a GitHub Actions Runner in an existing kubernetes cluster
 
 To setup the runner controller see the [actions runner controller module](https://registry.terraform.io/modules/infinite-automations/github-actions-runner-controller/helm/latest) from the [terraform-kubectl-github-actions-runner-controller](https://github.com/infinite-automations/terraform-helm-github-actions-runner-controller) repository.
