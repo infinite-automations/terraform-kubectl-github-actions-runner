@@ -1,7 +1,7 @@
 # terraform-kubectl-github-actions-runner
 
 > [!CAUTION]
-> Archived in favor of GitHub [super-linter](https://github.com/super-linter/super-linter)
+> Archived as not required anymore
 
 Setup the a GitHub Actions Runner in an existing kubernetes cluster
 
